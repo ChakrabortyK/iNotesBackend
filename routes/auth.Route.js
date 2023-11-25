@@ -20,7 +20,7 @@ router.get("/", query("name").notEmpty(), async (req, res) => {
 });
 
 router.post(
-  "/",
+  "/signup",
   [
     body("name")
       .isLength({ min: 5 })
@@ -37,39 +37,29 @@ router.post(
       return res.status(404).json({ errors: errors.array() });
     }
 
-    await User.create(matchedData(req))
-      .then((userData) => {
-        res.json(userData);
-      })
-      .catch((err) => {
-        res
+    try {
+      const existingUser = await User.findOne({ email: req.body.email });
+      if (existingUser) {
+        return res
           .status(400)
-          .json({ Error: "Duplicate Value error", message: err.message });
-      });
-    // const { password } = matchedData(req);
-    // if (password) {
-    //   await body('passwordConfirmation')
-    //     .equals(password)
-    //     .withMessage('passwords do not match')
-    //     .run(req);
-    // }matching a password with confirm password
+          .json({ message: "Email already exists. Please try another one." });
+      }
+      const user = await User.create(matchedData(req));
+
+      res.status(200).json(user);
+    } catch (error) {
+      return res.status(500).send("Some Error occured");
+    }
+
+    // .then((userData) => {
+    //   res.json(userData);
+    // })
+    // .catch((err) => {
+    //   res
+    //     .status(400)
+    //     .json({ message: err.message });
+    // });
   }
 );
-
-const validate = (validations) => {
-  return async (req, res, next) => {
-    for (let validation of validations) {
-      const result = await validation.run(req);
-      if (result.errors.length) break;
-    }
-
-    const errors = validationResult(req);
-    if (errors.isEmpty()) {
-      return next();
-    }
-
-    res.status(400).json({ errors: errors.array() });
-  };
-};
 
 module.exports = router;
