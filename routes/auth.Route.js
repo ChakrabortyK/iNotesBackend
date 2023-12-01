@@ -11,9 +11,10 @@ const {
 const User = require("../models/User.Schema");
 
 router.get("/", async (req, res) => {
-  res.send(`Hello, ${req.query.name}!`);
+  res.send(`Hello darkness my old friend...`);
 });
 
+//POST: api/auth/signup
 router.post(
   "/signup",
   //MIDDLEWARE FOR EXPRESS-VALIDATOR
@@ -31,7 +32,7 @@ router.post(
     //validationResult = Extracts the validation errors of an express request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(404).json({ errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
     }
 
     try {
@@ -60,24 +61,53 @@ router.post(
       //CREATE JWT AUTHENTICATION
       const jwt_secret = "somesortofsecret";
       const payload = { id: user._id };
-      jwt.sign(
-        payload,
-        jwt_secret,
-        {
-          expiresIn: 360000,
-        },
-        (err, token) => {
-          if (err) throw err;
-          res.status(200).json({ token });
-        }
-      );
-
-      // res.status(200).json(user);
+      const token = jwt.sign(payload, jwt_secret);
+      // console.log(user);
+      res.status(200).json({ user: user, token: token });
     } catch (error) {
-      console.log(error);
+      console.error(error.message);
       return res.status(500).send("Some Error occured");
     }
   }
 );
 
+//POST: api/auth/login
+router.post(
+  "/login",
+  [
+    body("email").isEmail().withMessage("Email must be valid"),
+    body("password").notEmpty().withMessage("password must exist"),
+  ],
+  async (req, res) => {
+    const result = validationResult(req);
+    const result2 = result.formatWith((error) => error.msg);
+
+    if (!result2.isEmpty()) {
+      return res.status(400).json({ errors: result2.array() });
+    }
+
+    const { email, password } = req.body;
+    try {
+      let user = await User.findOne({ email: email });
+      if (!user) {
+        return res.status(400).json({ msg: "Invalid Credentials" });
+      }
+
+      const passwordComp = await bcrypt.compare(password, user.password);
+      if (!passwordComp) {
+        return res.status(400).json({ msg: "Invalid Credentials" });
+      }
+
+      //CREATE JWT AUTHENTICATION
+      const jwt_secret = "somesortofsecret";
+      const payload = { id: user._id };
+      const token = jwt.sign(payload, jwt_secret);
+      // console.log(token);
+      res.status(200).json({ msg: "Successfully Logged In", token: token });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+    }
+  }
+);
 module.exports = router;
