@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+
+//REQUIRE THE MIDDLEWARES
+const userDetails = require("../middlewares/userDetails.middleware");
+
 const {
   query,
   validationResult,
@@ -9,6 +13,8 @@ const {
   body,
 } = require("express-validator");
 const User = require("../models/User.Schema");
+
+const jwt_secret = "somesortofsecret";
 
 router.get("/", async (req, res) => {
   res.send(`Hello darkness my old friend...`);
@@ -59,11 +65,15 @@ router.post(
       });
 
       //CREATE JWT AUTHENTICATION
-      const jwt_secret = "somesortofsecret";
       const payload = { id: user._id };
       const token = jwt.sign(payload, jwt_secret);
       // console.log(user);
-      res.status(200).json({ user: user, token: token });
+      res
+        .status(200)
+        .json({
+          user: { email: user.email, userName: user.name },
+          token: token,
+        });
     } catch (error) {
       console.error(error.message);
       return res.status(500).send("Some Error occured");
@@ -89,6 +99,7 @@ router.post(
     const { email, password } = req.body;
     try {
       let user = await User.findOne({ email: email });
+
       if (!user) {
         return res.status(400).json({ msg: "Invalid Credentials" });
       }
@@ -99,15 +110,34 @@ router.post(
       }
 
       //CREATE JWT AUTHENTICATION
-      const jwt_secret = "somesortofsecret";
       const payload = { id: user._id };
       const token = jwt.sign(payload, jwt_secret);
       // console.log(token);
-      res.status(200).json({ msg: "Successfully Logged In", token: token });
+      res.status(200).json({
+        msg: "Successfully Logged In",
+        user: { email: user.email, userName: user.name },
+        token: token,
+      });
     } catch (error) {
       console.error(error);
       res.status(500).send("Server Error");
     }
   }
 );
+
+//GET: api/auth/getUser
+router.post("/getuser", userDetails, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    let user = await User.findById(userId).select("-password");
+    if (user) {
+      res.status(200).json({ user });
+    } else {
+      res.status(404).json({ msg: "User Not Found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
 module.exports = router;
