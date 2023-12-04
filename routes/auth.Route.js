@@ -2,22 +2,24 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { validationResult, body } = require("express-validator");
+
+//REQUIRE THE MODEL
+const User = require("../models/User.Schema");
 
 //REQUIRE THE MIDDLEWARES
-const userDetails = require("../middlewares/userDetails.middleware");
-
-const {
-  query,
-  validationResult,
-  matchedData,
-  body,
-} = require("express-validator");
-const User = require("../models/User.Schema");
+const fetchUser = require("../middlewares/fetchUser.middleware");
 
 const jwt_secret = "somesortofsecret";
 
-router.get("/", async (req, res) => {
-  res.send(`Hello darkness my old friend...`);
+router.get("/getalluser", async (req, res) => {
+  // res.send(`Hello darkness my old friend...`);
+  try {
+    const users = await User.find();
+    res.send(users);
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 //POST: api/auth/signup
@@ -32,7 +34,7 @@ router.post(
     body("password")
       .isLength({ min: 5 })
       .withMessage("Password must be at least 5 characters long"),
-    body("role"),
+    body("role").optional(),
   ],
   async (req, res) => {
     //validationResult = Extracts the validation errors of an express request
@@ -68,12 +70,11 @@ router.post(
       const payload = { id: user._id };
       const token = jwt.sign(payload, jwt_secret);
       // console.log(user);
-      res
-        .status(200)
-        .json({
-          user: { email: user.email, userName: user.name },
-          token: token,
-        });
+      res.status(200).json({
+        // user: { email: user.email, userName: user.name },
+        user: user,
+        token: token,
+      });
     } catch (error) {
       console.error(error.message);
       return res.status(500).send("Some Error occured");
@@ -115,7 +116,8 @@ router.post(
       // console.log(token);
       res.status(200).json({
         msg: "Successfully Logged In",
-        user: { email: user.email, userName: user.name },
+        // user: { email: user.email, userName: user.name },
+        user: user,
         token: token,
       });
     } catch (error) {
@@ -126,7 +128,7 @@ router.post(
 );
 
 //GET: api/auth/getUser
-router.post("/getuser", userDetails, async (req, res) => {
+router.get("/getuser", fetchUser, async (req, res) => {
   try {
     const userId = req.user.id;
     let user = await User.findById(userId).select("-password");

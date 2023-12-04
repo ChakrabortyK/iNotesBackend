@@ -19,7 +19,7 @@ const fetchUser = async (req, res, next) => {
       next();
     } catch {
       return res.status(401).json({
-        message: "Access Denied trycatch",
+        message: "Access Denied From JWT",
       });
     }
   } catch (error) {
