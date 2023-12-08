@@ -1,6 +1,6 @@
 const express = require("express");
 const mongo = require("./db/db");
-const PORT = 3000;
+const PORT = 3001;
 
 const app = express();
 app.use(express.json());
