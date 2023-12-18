@@ -18,6 +18,10 @@ router.get("/getalluser", async (req, res) => {
     const users = await User.find();
     res.send(users);
   } catch (error) {
+    res.send({
+      success: false,
+      message: "Some Error occured during getting all users",
+    });
     console.error(error);
   }
 });
@@ -40,16 +44,17 @@ router.post(
     //validationResult = Extracts the validation errors of an express request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     try {
       //CHEACKING IF EMAIL IS ALREADY REGISTERED
       const existingUser = await User.findOne({ email: req.body.email });
       if (existingUser) {
-        return res
-          .status(400)
-          .json({ message: "Email already exists. Please try another one." });
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists. Please try another one.",
+        });
       }
 
       //HASHING THE PASSWORD
@@ -72,12 +77,15 @@ router.post(
       // console.log(user);
       res.status(200).json({
         // user: { email: user.email, userName: user.name },
+        success: true,
         user: user,
         token: token,
       });
     } catch (error) {
       console.error(error.message);
-      return res.status(500).send("Some Error occured");
+      return res
+        .status(500)
+        .json({ message: "Some Error occured During Signup", success: false });
     }
   }
 );
@@ -91,10 +99,10 @@ router.post(
   ],
   async (req, res) => {
     const result = validationResult(req);
-    const result2 = result.formatWith((error) => error.msg);
+    const result2 = result.formatWith((error) => error.message);
 
     if (!result2.isEmpty()) {
-      return res.status(400).json({ errors: result2.array() });
+      return res.status(400).json({ success: false, errors: result2.array() });
     }
 
     const { email, password } = req.body;
@@ -102,12 +110,16 @@ router.post(
       let user = await User.findOne({ email: email });
 
       if (!user) {
-        return res.status(400).json({ msg: "Invalid Credentials" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid Credentials" });
       }
 
       const passwordComp = await bcrypt.compare(password, user.password);
       if (!passwordComp) {
-        return res.status(400).json({ msg: "Invalid Credentials" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid Credentials" });
       }
 
       //CREATE JWT AUTHENTICATION
@@ -115,14 +127,15 @@ router.post(
       const token = jwt.sign(payload, jwt_secret);
       // console.log(token);
       res.status(200).json({
-        msg: "Successfully Logged In",
+        success: true,
+        message: "Successfully Logged In",
         // user: { email: user.email, userName: user.name },
         user: user,
         token: token,
       });
     } catch (error) {
       console.error(error);
-      res.status(500).send("Server Error");
+      res.status(500).json({ success: false, message: "Server Error" });
     }
   }
 );
@@ -133,13 +146,13 @@ router.get("/getuser", fetchUser, async (req, res) => {
     const userId = req.user.id;
     let user = await User.findById(userId).select("-password");
     if (user) {
-      res.status(200).json({ user });
+      res.status(200).json({ success: true, user });
     } else {
-      res.status(404).json({ msg: "User Not Found" });
+      res.status(404).json({ success: false, message: "User Not Found" });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Server Error");
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 });
 module.exports = router;
