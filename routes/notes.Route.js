@@ -72,7 +72,7 @@ router.post("/new", arrayVal, fetchUser, async (req, res) => {
     });
 
     try {
-      res.status(201).json(note);
+      res.status(201).json({ success: true, note: note });
     } catch (error) {
       console.error(error);
       res
@@ -103,21 +103,17 @@ router.put("/update/:noteId", fetchUser, async (req, res) => {
     }
 
     if (Object.keys(updatedNote).length === 0) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Please provide at least one valid update",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Please provide at least one valid update",
+      });
     }
 
     if (req.user.id !== note.user.toString()) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: "You can only update your own notes",
-        });
+      return res.status(401).json({
+        success: false,
+        message: "You can only update your own notes",
+      });
     }
 
     noteUpdateResult = await Notes.findByIdAndUpdate(
@@ -138,12 +134,10 @@ router.delete("/delete/:noteId", fetchUser, async (req, res) => {
   try {
     const note = await Notes.findById(req.params.noteId);
     if (req.user.id !== note.user.toString()) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: "You can only delete your own notes",
-        });
+      return res.status(401).json({
+        success: false,
+        message: "You can only delete your own notes",
+      });
     }
 
     if (!note) {
