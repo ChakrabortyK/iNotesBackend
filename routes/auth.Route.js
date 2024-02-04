@@ -10,7 +10,8 @@ const User = require("../models/User.Schema");
 //REQUIRE THE MIDDLEWARES
 const fetchUser = require("../middlewares/fetchUser.middleware");
 
-const jwt_secret = "somesortofsecret";
+const jwt_secret = process.env.JWT_SECRET;
+console.log("kwjkwj", jwt_secret);
 
 router.get("/getalluser", async (req, res) => {
   // res.send(`Hello darkness my old friend...`);

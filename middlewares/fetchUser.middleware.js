@@ -1,6 +1,6 @@
 //require jwt
 const jwt = require("jsonwebtoken");
-const jwt_secret = "somesortofsecret";
+const jwt_secret = process.env.JWT_SECRET;
 
 const fetchUser = async (req, res, next) => {
   //get the user from the jwt token
